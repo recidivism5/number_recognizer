@@ -279,6 +279,28 @@ NeuralNet* gen_network(unsigned int numLayers, unsigned int* layerHeights)
     return netPtr;
 }
 
+void save_model_to_disk(NeuralNet* netPtr, char* filePath)
+{
+    FILE* fptr = fopen(filePath, "wb");
+    fwrite(&(netPtr->numLayers), sizeof(netPtr->numLayers), 1, fptr);
+    unsigned int i;
+    unsigned int j;
+    unsigned int k;
+    for (i = 0; i < netPtr->numLayers; i++)
+    {
+        fwrite(&(netPtr->layers[i].numNeurons), sizeof(netPtr->layers[i].numNeurons), 1, fptr);
+    }
+    for (i = 1; i < netPtr->numLayers; i++)
+    {
+        for (j = 0; j < netPtr->layers[i].numNeurons; j++)
+        {
+            fwrite(&(netPtr->layers[i].neurons[j].bias), sizeof(float), 1, fptr);
+            fwrite(netPtr->layers[i].neurons[j].weights, netPtr->layers[i].neurons[j].numWeights * sizeof(float), 1, fptr);
+        }
+    }
+    fclose(fptr);
+}
+
 int main(int argc, char* argv[])
 {
     srand(time(NULL));
@@ -296,5 +318,15 @@ int main(int argc, char* argv[])
     }
     printf("Done.\nTraining for %u cycles...\n", cycles);
     train(netPtr, tDataPtr, cycles);
+    printf("Done.\n");
+
+    char saveName[30] = "0";
+    if (argv[2] != NULL)
+    {
+        strcpy(&(saveName[0]), argv[2]);
+    }
+    strcat(saveName, ".network");
+    printf("Saving model to disk as %s\n", saveName);
+    save_model_to_disk(netPtr, saveName);
     printf("Done.\n");
 }
