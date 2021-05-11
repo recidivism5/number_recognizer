@@ -169,7 +169,7 @@ void train(NeuralNet* netPtr, TrainingData* tDataPtr, unsigned int cycles)
                     for (k = 0; k < netPtr->layers[j].numNeurons; k++)
                     {
                         netPtr->layers[j].neurons[k].dCdZ = 2 * (netPtr->layers[j].neurons[k].activation - tDataPtr->pairs[i].expectedActivation[k]) * fast_sigmoid_derivative(netPtr->layers[j].neurons[k].zeta);
-                        netPtr->layers[j].neurons[k].deltaBiasAccumulator += netPtr->layers[j].neurons[k].dCdZ;
+                        //netPtr->layers[j].neurons[k].deltaBiasAccumulator += netPtr->layers[j].neurons[k].dCdZ;
                     }
                 }
                 else
