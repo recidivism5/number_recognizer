@@ -6,7 +6,7 @@
 
 float fast_sigmoid(float x)
 {
-    return 0.5f * ( (x / (1.0f + fabs(x))) + 1 );
+    return 1.0f / (1.0f + exp(x));
 }
 
 typedef struct Neuron {
