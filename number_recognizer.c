@@ -4,7 +4,7 @@
 #include <string.h>
 #include <time.h>
 
-#define LEARNING_RATE 0.1f
+#define LEARNING_RATE 0.9f
 
 int isLittleEndian()
 {
@@ -15,13 +15,12 @@ int isLittleEndian()
 
 float fast_sigmoid(float x)
 {
-    return 0.5f * ( (x / (1.0f + fabs(x))) + 1 );
+    return 1.0f / (1.0f + exp(-x));
 }
 
-float fast_sigmoid_derivative(float x)
+float fast_sigmoid_derivative(float fx)
 {
-    float z = fabs(x) + 1;
-    return 1/(2*z*z);
+    return fx * (1-fx);
 }
 
 float average(float* ar, unsigned int numIndices)
@@ -168,7 +167,7 @@ void train(NeuralNet* netPtr, TrainingData* tDataPtr, unsigned int cycles)
                 {
                     for (k = 0; k < netPtr->layers[j].numNeurons; k++)
                     {
-                        netPtr->layers[j].neurons[k].dCdZ = 2 * (netPtr->layers[j].neurons[k].activation - tDataPtr->pairs[i].expectedActivation[k]) * fast_sigmoid_derivative(netPtr->layers[j].neurons[k].zeta);
+                        netPtr->layers[j].neurons[k].dCdZ = 2 * (netPtr->layers[j].neurons[k].activation - tDataPtr->pairs[i].expectedActivation[k]) * fast_sigmoid_derivative(netPtr->layers[j].neurons[k].activation);
                         //netPtr->layers[j].neurons[k].deltaBiasAccumulator += netPtr->layers[j].neurons[k].dCdZ;
                     }
                 }
@@ -181,16 +180,16 @@ void train(NeuralNet* netPtr, TrainingData* tDataPtr, unsigned int cycles)
                         {
                             dCda += netPtr->layers[j+1].neurons[n].dCdZ * netPtr->layers[j+1].neurons[n].weights[k];
                         }
-                        netPtr->layers[j].neurons[k].dCdZ = dCda * fast_sigmoid_derivative(netPtr->layers[j].neurons[k].zeta);
+                        netPtr->layers[j].neurons[k].dCdZ = dCda * fast_sigmoid_derivative(netPtr->layers[j].neurons[k].activation);
                     }
                 }
                 for (k = 0; k < netPtr->layers[j].numNeurons; k++)
                 {
                     for (w = 0; w < netPtr->layers[j].neurons[k].numWeights; w++)
                     {
-                        netPtr->layers[j].neurons[k].deltaWeightAccumulators[w] += (netPtr->layers[j].neurons[k].dCdZ * netPtr->layers[j-1].neurons[w].activation);
+                        netPtr->layers[j].neurons[k].deltaWeightAccumulators[w] -= (netPtr->layers[j].neurons[k].dCdZ * netPtr->layers[j-1].neurons[w].activation);
                     }
-                    netPtr->layers[j].neurons[k].deltaBiasAccumulator += netPtr->layers[j].neurons[k].dCdZ;
+                    netPtr->layers[j].neurons[k].deltaBiasAccumulator -= netPtr->layers[j].neurons[k].dCdZ;
                 }
             }
         }
@@ -200,9 +199,9 @@ void train(NeuralNet* netPtr, TrainingData* tDataPtr, unsigned int cycles)
             {
                 for (k = 0; k < netPtr->layers[i].neurons[j].numWeights; k++)
                 {
-                    netPtr->layers[i].neurons[j].weights[k] -= (netPtr->layers[i].neurons[j].deltaWeightAccumulators[k] / tDataPtr->numPairs) * LEARNING_RATE;
+                    netPtr->layers[i].neurons[j].weights[k] += (netPtr->layers[i].neurons[j].deltaWeightAccumulators[k] / tDataPtr->numPairs) * LEARNING_RATE;
                 }
-                netPtr->layers[i].neurons[j].bias -= (netPtr->layers[i].neurons[j].deltaBiasAccumulator / tDataPtr->numPairs) * LEARNING_RATE;
+                netPtr->layers[i].neurons[j].bias += (netPtr->layers[i].neurons[j].deltaBiasAccumulator / tDataPtr->numPairs) * LEARNING_RATE;
             }
         }
         printf("Cycle %u complete. avgCost = %f\n", cycle, sumCost / tDataPtr->numPairs);
