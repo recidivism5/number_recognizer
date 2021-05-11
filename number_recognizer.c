@@ -179,7 +179,7 @@ void train(NeuralNet* netPtr, TrainingData* tDataPtr, unsigned int cycles)
                         dCda = 0.0f;
                         for (n = 0; n < netPtr->layers[j+1].numNeurons; n++)
                         {
-                            dCda += netPtr->layers[j+1].neurons[n].zeta * netPtr->layers[j+1].neurons[n].weights[k];
+                            dCda += netPtr->layers[j+1].neurons[n].dCdZ * netPtr->layers[j+1].neurons[n].weights[k];
                         }
                         netPtr->layers[j].neurons[k].dCdZ = dCda * fast_sigmoid_derivative(netPtr->layers[j].neurons[k].zeta);
                     }
