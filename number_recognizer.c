@@ -15,7 +15,7 @@ int isLittleEndian()
 
 float fast_sigmoid(float x)
 {
-    return 1.0f / (1.0f + exp(-x));
+    return 1.0f / (1.0f + exp(x));
 }
 
 float fast_sigmoid_derivative(float fx)
@@ -187,9 +187,9 @@ void train(NeuralNet* netPtr, TrainingData* tDataPtr, unsigned int cycles)
                 {
                     for (w = 0; w < netPtr->layers[j].neurons[k].numWeights; w++)
                     {
-                        netPtr->layers[j].neurons[k].deltaWeightAccumulators[w] -= (netPtr->layers[j].neurons[k].dCdZ * netPtr->layers[j-1].neurons[w].activation);
+                        netPtr->layers[j].neurons[k].deltaWeightAccumulators[w] += (netPtr->layers[j].neurons[k].dCdZ * netPtr->layers[j-1].neurons[w].activation);
                     }
-                    netPtr->layers[j].neurons[k].deltaBiasAccumulator -= netPtr->layers[j].neurons[k].dCdZ;
+                    netPtr->layers[j].neurons[k].deltaBiasAccumulator += netPtr->layers[j].neurons[k].dCdZ;
                 }
             }
         }
