@@ -4,7 +4,7 @@
 #include <string.h>
 #include <time.h>
 
-#define LEARNING_RATE 0.9f
+#define LEARNING_RATE 0.1f
 
 int isLittleEndian()
 {
@@ -114,6 +114,16 @@ float errorSum(Layer* outputLayer, float* trainingBuffer)
     return sum;
 }
 
+void print_output_layer_activations(NeuralNet* netPtr)
+{
+    unsigned int i;
+    for (i = 0; i < netPtr->layers[netPtr->numLayers-1].numNeurons; i++)
+    {
+        printf("%f ", netPtr->layers[netPtr->numLayers-1].neurons[i].activation);
+    }
+    putchar('\n');
+}
+
 void train(NeuralNet* netPtr, TrainingData* tDataPtr, unsigned int cycles)
 {
     float dCda;
@@ -159,7 +169,7 @@ void train(NeuralNet* netPtr, TrainingData* tDataPtr, unsigned int cycles)
             {
                 calculate_activations(&(netPtr->layers[j]), &(netPtr->layers[j+1]));
             }
-            sumCost += cost_function(&(netPtr->layers[netPtr->numLayers-1]), tDataPtr->pairs[i].inputs);
+            sumCost += cost_function(&(netPtr->layers[netPtr->numLayers-1]), tDataPtr->pairs[i].expectedActivation);
             //forward propagation done, now backpropagation:
             for (j = netPtr->numLayers-1; j > 0; j--)
             {
@@ -300,15 +310,56 @@ void save_model_to_disk(NeuralNet* netPtr, char* filePath)
     fclose(fptr);
 }
 
+NeuralNet* load_network(char* filePath)
+{
+    FILE* fptr = fopen(filePath, "rb");
+    NeuralNet* netPtr = malloc(sizeof(NeuralNet));
+    fread(&(netPtr->numLayers), sizeof(unsigned int), 1, fptr);
+    printf("numLayers = %u\n", netPtr->numLayers);
+    netPtr->layers = malloc(netPtr->numLayers * sizeof(Layer));
+    unsigned int i;
+    unsigned int j;
+    unsigned int k;
+    for (i = 0; i < netPtr->numLayers; i++)
+    {
+        fread(&(netPtr->layers[i].numNeurons), sizeof(unsigned int), 1, fptr);
+        printf("layer %u numNeurons = %u\n", i, netPtr->layers[i].numNeurons);
+        netPtr->layers[i].neurons = malloc(netPtr->layers[i].numNeurons * sizeof(Neuron));
+    }
+    for (i = 1; i < netPtr->numLayers; i++)
+    {
+        for (j = 0; j < netPtr->layers[i].numNeurons; j++)
+        {
+            fread(&(netPtr->layers[i].neurons[j].bias), sizeof(float), 1, fptr);
+            //printf("layer %u neuron %u bias = %f\n", i, j, netPtr->layers[i].neurons[j].bias); 
+            netPtr->layers[i].neurons[j].numWeights = netPtr->layers[i-1].numNeurons;
+            netPtr->layers[i].neurons[j].weights = malloc(netPtr->layers[i].neurons[j].numWeights * sizeof(float));
+            netPtr->layers[i].neurons[j].deltaWeightAccumulators = malloc(netPtr->layers[i-1].numNeurons * sizeof(float));
+            fread(netPtr->layers[i].neurons[j].weights, netPtr->layers[i].neurons[j].numWeights * sizeof(float), 1, fptr);
+        }
+    }
+    fclose(fptr);
+    return netPtr;
+}
+
 int main(int argc, char* argv[])
 {
     srand(time(NULL));
 
     printf("Loading training data... ");
-    TrainingData* tDataPtr = load_training_data("./train-images.idx3-ubyte", "./train-labels.idx1-ubyte");
+    TrainingData* tDataPtr = load_training_data("train-images.idx3-ubyte", "train-labels.idx1-ubyte");
     printf("Done.\nGenerating neural net... ");
-    unsigned int layerHeights[] = {28*28, 16, 16, 10};
-    NeuralNet* netPtr = gen_network(4, layerHeights);
+
+    NeuralNet* netPtr;
+    if (argc < 4)
+    {
+        unsigned int layerHeights[] = {28*28, 16, 16, 10};
+        netPtr = gen_network(4, layerHeights);
+    }
+    else
+    {
+        netPtr = load_network(argv[3]);
+    }
     
     unsigned int cycles = 1000;
     if (argv[1] != NULL)

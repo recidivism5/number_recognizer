@@ -67,7 +67,20 @@ void propagate_forward(NeuralNet* netPtr)
     }
 }
 
-void print_output_layer_activations(NeuralNet* netPtr)
+float cost_function(Layer* outputLayer, float* trainingBuffer)
+{
+    float cost = 0;
+    float diff;
+    unsigned int i;
+    for (i = 0; i < outputLayer->numNeurons; i++)
+    {
+        diff = outputLayer->neurons[i].activation - trainingBuffer[i];
+        cost += diff * diff;
+    }
+    return cost;
+}
+
+void print_output_layer_activations(NeuralNet* netPtr, char expected)
 {
     unsigned int i;
     for (i = 0; i < netPtr->layers[netPtr->numLayers-1].numNeurons; i++)
@@ -75,6 +88,15 @@ void print_output_layer_activations(NeuralNet* netPtr)
         printf("%f ", netPtr->layers[netPtr->numLayers-1].neurons[i].activation);
     }
     putchar('\n');
+    float output[10] = {0.0f};
+    output[expected] = 1.0f;
+    printf("expected: ");
+    for (i = 0; i < 10; i++)
+    {
+        printf("%f ", output[i]);
+    }
+    putchar('\n');
+    printf("cost = %f\n", cost_function(&(netPtr->layers[netPtr->numLayers-1]), output));
 }
 
 NeuralNet* load_network(char* filePath)
@@ -126,8 +148,8 @@ void run_test(NeuralNet* netPtr, char* inputFilePath, char* labelFilePath, unsig
         }
         set_input(netPtr, inputBuffer);
         propagate_forward(netPtr);
-        print_output_layer_activations(netPtr);
-        printf("%u\n", fgetc(fptrL));
+        print_output_layer_activations(netPtr, fgetc(fptrL));
+        printf("\n");
     }
     fclose(fptrI);
     fclose(fptrL);
