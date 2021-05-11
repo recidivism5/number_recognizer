@@ -12,9 +12,7 @@ float fast_sigmoid(float x)
 typedef struct Neuron {
     float* weights;
     unsigned int numWeights;
-    float* deltaWeightAccumulators;
     float  bias;
-    float  deltaBiasAccumulator;
     float  dCdZ;
     float  zeta;
     float  activation;

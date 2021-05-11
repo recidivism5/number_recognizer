@@ -4,7 +4,7 @@
 #include <string.h>
 #include <time.h>
 
-#define LEARNING_RATE 0.1f
+#define LEARNING_RATE 0.05f
 
 int isLittleEndian()
 {
@@ -42,9 +42,7 @@ float random_float(float Min, float Max)
 typedef struct Neuron {
     float* weights;
     unsigned int numWeights;
-    float* deltaWeightAccumulators;
     float  bias;
-    float  deltaBiasAccumulator;
     float  dCdZ;
     float  zeta;
     float  activation;
@@ -126,15 +124,10 @@ void print_output_layer_activations(NeuralNet* netPtr)
 
 void train(NeuralNet* netPtr, TrainingData* tDataPtr, unsigned int cycles)
 {
-    float dCda;
-    float avgCost;
     float sumCost;
-    float deltaSum;
-    float sigDerivativeZeta;
-    float diff;
-    float totalDiff;
-    float averageDiff;
-    float sigDZLR;
+    
+    float dCda;
+
     unsigned int cycle;
     unsigned int i;
     unsigned int j;
@@ -251,14 +244,11 @@ NeuralNet* gen_network(unsigned int numLayers, unsigned int* layerHeights)
         {
             netPtr->layers[i].neurons[j].numWeights = netPtr->layers[i-1].numNeurons;
             netPtr->layers[i].neurons[j].weights = malloc(netPtr->layers[i-1].numNeurons * sizeof(float));
-            netPtr->layers[i].neurons[j].deltaWeightAccumulators = malloc(netPtr->layers[i-1].numNeurons * sizeof(float));
             for (k = 0; k < netPtr->layers[i].neurons[j].numWeights; k++)
             {
                 netPtr->layers[i].neurons[j].weights[k] = random_float(-1.0f, 1.0f);
-                netPtr->layers[i].neurons[j].deltaWeightAccumulators[k] = 0.0f;
             }
             netPtr->layers[i].neurons[j].bias = random_float(-1.0f, 1.0f);
-            netPtr->layers[i].neurons[j].deltaBiasAccumulator = 0.0f;
         }
     }
     return netPtr;
@@ -310,7 +300,6 @@ NeuralNet* load_network(char* filePath)
             //printf("layer %u neuron %u bias = %f\n", i, j, netPtr->layers[i].neurons[j].bias); 
             netPtr->layers[i].neurons[j].numWeights = netPtr->layers[i-1].numNeurons;
             netPtr->layers[i].neurons[j].weights = malloc(netPtr->layers[i].neurons[j].numWeights * sizeof(float));
-            netPtr->layers[i].neurons[j].deltaWeightAccumulators = malloc(netPtr->layers[i-1].numNeurons * sizeof(float));
             fread(netPtr->layers[i].neurons[j].weights, netPtr->layers[i].neurons[j].numWeights * sizeof(float), 1, fptr);
         }
     }
